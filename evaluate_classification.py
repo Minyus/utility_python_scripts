@@ -1,15 +1,16 @@
 
 # coding: utf-8
 
-# In[1]:
+# In[5]:
 
 
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
-def score_df(y_train, y_test, y_pred_train, y_pred_test, average='macro'):
+def score_df(y_train, y_test, y_pred_train, y_pred_test, average='binary'):
     if len(y_train) != len(y_pred_train): raise Exception('Lengths of true and predicted for train do not match.')
     if len(y_pred_test) != len(y_pred_test): raise Exception('Lengths of true and predicted for test do not match.')
-    score_2darray = [                      [                       accuracy_score(y_, y_pred_), 
+    score_2darray = [                      [                       len(y_),
+                      accuracy_score(y_, y_pred_), 
                       precision_score(y_, y_pred_, average=average), 
                       recall_score(y_, y_pred_, average=average), 
                       f1_score(y_, y_pred_, average=average) \
@@ -18,11 +19,11 @@ def score_df(y_train, y_test, y_pred_train, y_pred_test, average='macro'):
                     ]
     score_df = pd.DataFrame(score_2darray,
                             index = ['train', 'test'], 
-                            columns = ['accuracy', 'precision', 'recall', 'f1'] )
+                            columns = ['support', 'accuracy', 'precision', 'recall', 'f1'] )
     return score_df
 
 
-# In[2]:
+# In[6]:
 
 
 from sklearn.metrics import confusion_matrix
@@ -36,7 +37,7 @@ def conf_mat_df(y_true, y_pred):
     return conf_mat_df
 
 
-# In[3]:
+# In[8]:
 
 
 if __name__ == '__main__':
@@ -61,7 +62,7 @@ if __name__ == '__main__':
     y_pred_test = model.predict(X_test)
     
     print('\nScore Table:')
-    display(score_df(y_train, y_test, y_pred_train, y_pred_test))
+    display(score_df(y_train, y_test, y_pred_train, y_pred_test, average='macro'))
     print('\nConfusion Matrix for Train:')
     display(conf_mat_df(y_train, y_pred_train))
     print('\nConfusion Matrix for Test:')
