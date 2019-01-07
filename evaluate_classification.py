@@ -1,29 +1,35 @@
 
 # coding: utf-8
 
-# In[5]:
+# In[61]:
 
 
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+import pandas as pd
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+
 
 def score_df(y_train, y_test, y_pred_train, y_pred_test, average='binary'):
     if len(y_train) != len(y_pred_train): raise Exception('Lengths of true and predicted for train do not match.')
     if len(y_pred_test) != len(y_pred_test): raise Exception('Lengths of true and predicted for test do not match.')
+    num_classes = pd.Series( y_train ).nunique()
     score_2darray = [                      [                       len(y_),
+                      pd.Series( y_ ).nunique(),
                       accuracy_score(y_, y_pred_), 
                       precision_score(y_, y_pred_, average=average), 
                       recall_score(y_, y_pred_, average=average), 
                       f1_score(y_, y_pred_, average=average) \
                      ] \
+                     + ([roc_auc_score(y_, y_pred_)] if num_classes == 2 else []) \
                      for (y_, y_pred_) in [(y_train, y_pred_train), (y_test, y_pred_test)] \
                     ]
     score_df = pd.DataFrame(score_2darray,
                             index = ['train', 'test'], 
-                            columns = ['support', 'accuracy', 'precision', 'recall', 'f1'] )
+                            columns = ['# samples', '# classes', 'accuracy', 'precision', 'recall', 'f1'] \
+                            + (['auc'] if num_classes == 2 else []))
     return score_df
 
 
-# In[6]:
+# In[62]:
 
 
 from sklearn.metrics import confusion_matrix
@@ -37,9 +43,10 @@ def conf_mat_df(y_true, y_pred):
     return conf_mat_df
 
 
-# In[8]:
+# In[63]:
 
 
+multiclass = False # can be set to either True or False
 if __name__ == '__main__':
     from sklearn.linear_model import LogisticRegression
     from sklearn import datasets, preprocessing
@@ -49,6 +56,8 @@ if __name__ == '__main__':
     
     iris = datasets.load_iris()
     X, y = iris.data[:, :2], iris.target
+    if not multiclass:
+        X, y = X[y <= 1], y[y <= 1] # force to binary
     
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.5, random_state=33)
     scaler = preprocessing.StandardScaler().fit(X_train)
@@ -62,7 +71,10 @@ if __name__ == '__main__':
     y_pred_test = model.predict(X_test)
     
     print('\nScore Table:')
-    display(score_df(y_train, y_test, y_pred_train, y_pred_test, average='macro'))
+    if multiclass:
+        display(score_df(y_train, y_test, y_pred_train, y_pred_test, average='macro'))
+    else:
+        display(score_df(y_train, y_test, y_pred_train, y_pred_test, average='binary'))
     print('\nConfusion Matrix for Train:')
     display(conf_mat_df(y_train, y_pred_train))
     print('\nConfusion Matrix for Test:')
